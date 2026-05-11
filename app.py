@@ -7,13 +7,26 @@ from datetime import datetime
 import re
 import uuid 
 import os
+import json
+import base64
 import threading # IMPORTANTE: Para el envío en segundo plano
 from gmail_api import send_email
 
-# 1. Configuración de Firebase
-cred_path = "credenciales.json"
+# 1. Configuración de Firebase (local: credenciales.json | Render: FIREBASE_CREDENTIALS_B64)
+def _firebase_certificate():
+    cred_path = "credenciales.json"
+    if os.path.isfile(cred_path):
+        return credentials.Certificate(cred_path)
+    b64 = os.environ.get("FIREBASE_CREDENTIALS_B64")
+    if b64:
+        data = json.loads(base64.b64decode(b64).decode("utf-8"))
+        return credentials.Certificate(data)
+    raise RuntimeError(
+        "Firebase: crea credenciales.json en la raíz o define la variable de entorno FIREBASE_CREDENTIALS_B64."
+    )
+
 if not firebase_admin._apps:
-    cred = credentials.Certificate(cred_path)
+    cred = _firebase_certificate()
     firebase_admin.initialize_app(cred, {
         'storageBucket': 'gestion-charat-admin.firebasestorage.app' 
     })
